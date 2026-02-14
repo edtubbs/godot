@@ -143,6 +143,48 @@ docker compose -f "${ROOT_DIR}/docker-compose.yml" up -d
 echo "Backend services started and Godot addons linked."
 EOF
 
+cat > "${ROOT_DIR}/scripts/generate_models_blender.py" <<'EOF'
+import bpy
+import os
+
+base = os.environ.get("DOGEKART_MODEL_DIR", os.path.join(os.getcwd(), "assets", "models"))
+os.makedirs(os.path.join(base, "karts"), exist_ok=True)
+os.makedirs(os.path.join(base, "tracks"), exist_ok=True)
+os.makedirs(os.path.join(base, "fighters"), exist_ok=True)
+
+
+def reset_scene():
+    bpy.ops.object.select_all(action="SELECT")
+    bpy.ops.object.delete()
+
+
+def export_cube(path, scale=(1.0, 1.0, 1.0)):
+    reset_scene()
+    bpy.ops.mesh.primitive_cube_add(size=2.0)
+    obj = bpy.context.active_object
+    obj.scale = scale
+    bpy.ops.export_scene.obj(filepath=path, use_selection=False, axis_forward="-Z", axis_up="Y")
+
+
+for i in range(1, 6):
+    export_cube(os.path.join(base, "karts", f"shiba_kart_0{i}.obj"), (1.3, 0.6, 0.8))
+
+export_cube(os.path.join(base, "tracks", "moon_loop_track.obj"), (6.0, 0.2, 6.0))
+export_cube(os.path.join(base, "tracks", "doge_city_track.obj"), (7.0, 0.2, 5.0))
+export_cube(os.path.join(base, "tracks", "shiba_temple_track.obj"), (5.5, 0.2, 7.0))
+export_cube(os.path.join(base, "fighters", "shiba_fighter.obj"), (0.5, 1.1, 0.4))
+EOF
+
+cat > "${ROOT_DIR}/scripts/generate_models.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "${ROOT_DIR}"
+blender --background --python "${ROOT_DIR}/scripts/generate_models_blender.py"
+echo "Blender-generated models exported to ${ROOT_DIR}/assets/models"
+EOF
+
 cat > "${ROOT_DIR}/pup/manifest.json" <<'EOF'
 {
   "name": "dogekart-clash",
@@ -209,6 +251,6 @@ write_model_obj "${ROOT_DIR}/assets/models/tracks/doge_city_track.obj"
 write_model_obj "${ROOT_DIR}/assets/models/tracks/shiba_temple_track.obj"
 write_model_obj "${ROOT_DIR}/assets/models/fighters/shiba_fighter.obj"
 
-chmod +x "${ROOT_DIR}/scripts/link_addons.sh" "${ROOT_DIR}/scripts/dev_up.sh"
+chmod +x "${ROOT_DIR}/scripts/link_addons.sh" "${ROOT_DIR}/scripts/dev_up.sh" "${ROOT_DIR}/scripts/generate_models.sh"
 
 echo "DogeKart Clash scaffold created at: ${ROOT_DIR}"

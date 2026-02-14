@@ -22,6 +22,12 @@ Bring up local backend services and link addons:
 ./DogeKartClash/scripts/dev_up.sh
 ```
 
+Regenerate all included models with Blender:
+
+```bash
+./DogeKartClash/scripts/generate_models.sh
+```
+
 ## Required upstream repositories
 
 The setup script clones the exact dependencies required by the prompt into `third_party/`:
@@ -64,6 +70,7 @@ It also generates:
 - `godot/project.godot` bootstrap project file
 - `pup/manifest.json` and `pup/pup.nix`
 - `scripts/link_addons.sh` and `scripts/dev_up.sh`
+- `scripts/generate_models.sh` + `scripts/generate_models_blender.py` (Blender model generation)
 - `docs/dependencies.md`
 - `assets/models/` with included placeholder 3D models:
   - 5 kart models (`shiba_kart_01..05.obj`)
