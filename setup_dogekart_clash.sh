@@ -164,6 +164,8 @@ def export_cube(path, scale=(1.0, 1.0, 1.0)):
     obj = bpy.context.active_object
     obj.scale = scale
     bpy.ops.export_scene.obj(filepath=path, use_selection=False, axis_forward="-Z", axis_up="Y")
+    gltf_path = path.rsplit(".", 1)[0] + ".gltf"
+    bpy.ops.export_scene.gltf(filepath=gltf_path, export_format="GLTF_SEPARATE")
 
 
 for i in range(1, 6):
@@ -182,7 +184,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "${ROOT_DIR}"
 blender --background --python "${ROOT_DIR}/scripts/generate_models_blender.py"
-echo "Blender-generated models exported to ${ROOT_DIR}/assets/models"
+echo "Blender-generated models exported to ${ROOT_DIR}/assets/models (OBJ + glTF)"
 EOF
 
 cat > "${ROOT_DIR}/pup/manifest.json" <<'EOF'

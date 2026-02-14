@@ -76,3 +76,9 @@ It also generates:
   - 5 kart models (`shiba_kart_01..05.obj`)
   - 3 track models (`moon_loop_track.obj`, `doge_city_track.obj`, `shiba_temple_track.obj`)
   - 1 fighter model (`shiba_fighter.obj`)
+
+## Mesh formats
+
+- Included starter assets are committed as `.obj`.
+- Blender generation exports both `.obj` and `.gltf` for each model.
+- Prefer `.gltf` for Godot/Web pipelines; keep `.obj` for DCC interoperability.
