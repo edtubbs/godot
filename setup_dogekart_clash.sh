@@ -191,7 +191,7 @@ def make_kart(path):
         for wheel_y in (-0.75, 0.75):
             bpy.ops.mesh.primitive_torus_add(major_segments=36, minor_segments=16, major_radius=0.24, minor_radius=0.09, location=(wheel_x, wheel_y, 0.22))
             wheel = bpy.context.active_object
-            wheel.rotation_euler[1] = 1.5708
+            wheel.rotation_euler[1] = math.pi / 2
             bpy.ops.object.shade_smooth()
     export_scene(path)
 
@@ -207,7 +207,7 @@ def make_track(path, scale=(6.0, 6.0), obstacles=12):
     for v in track.data.vertices:
         v.co.z += 0.12 * random.uniform(-1.0, 1.0)
     for i in range(obstacles):
-        angle = (i / obstacles) * 6.28318
+        angle = (i / obstacles) * (2 * math.pi)
         radius = min(scale) * 0.55
         bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=0.28, location=(radius * math.cos(angle), radius * math.sin(angle), 0.35))
     bpy.ops.object.shade_smooth()
