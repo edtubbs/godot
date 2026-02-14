@@ -147,7 +147,9 @@ EOF
 
 cat > "${ROOT_DIR}/scripts/generate_models_blender.py" <<'EOF'
 import bpy
+import math
 import os
+import random
 
 base = os.environ.get("DOGEKART_MODEL_DIR", os.path.join(os.getcwd(), "assets", "models"))
 blend_base = os.environ.get("DOGEKART_BLEND_DIR", os.path.join(os.getcwd(), "assets", "blender"))
@@ -164,37 +166,89 @@ def reset_scene():
     bpy.ops.object.delete()
 
 
-def export_cube(path, scale=(1.0, 1.0, 1.0)):
-    reset_scene()
-    bpy.ops.mesh.primitive_cube_add(size=2.0)
-    obj = bpy.context.active_object
-    obj.scale = scale
+def export_scene(path):
     bpy.ops.export_scene.obj(filepath=path, use_selection=False, axis_forward="-Z", axis_up="Y")
     gltf_path = path.rsplit(".", 1)[0] + ".gltf"
     bpy.ops.export_scene.gltf(filepath=gltf_path, export_format="GLTF_SEPARATE")
+    glb_path = path.rsplit(".", 1)[0] + ".glb"
+    bpy.ops.export_scene.gltf(filepath=glb_path, export_format="GLB")
     rel_path = os.path.relpath(path, base)
     blend_path = os.path.join(blend_base, os.path.splitext(rel_path)[0] + ".blend")
     os.makedirs(os.path.dirname(blend_path), exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=blend_path, copy=True)
 
 
-for i in range(1, 13):
-    export_cube(os.path.join(base, "karts", f"shiba_kart_{i:02d}.obj"), (1.3, 0.6, 0.8))
+def make_kart(path):
+    reset_scene()
+    bpy.ops.mesh.primitive_cube_add(size=2.0, location=(0, 0, 0.5))
+    body = bpy.context.active_object
+    body.scale = (1.25, 0.8, 0.35)
+    bpy.ops.object.shade_smooth()
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=48, ring_count=24, radius=0.5, location=(0.25, 0, 1.0))
+    canopy = bpy.context.active_object
+    canopy.scale = (0.8, 0.55, 0.5)
+    for wheel_x in (-0.95, 0.95):
+        for wheel_y in (-0.75, 0.75):
+            bpy.ops.mesh.primitive_torus_add(major_segments=36, minor_segments=16, major_radius=0.24, minor_radius=0.09, location=(wheel_x, wheel_y, 0.22))
+            wheel = bpy.context.active_object
+            wheel.rotation_euler[1] = 1.5708
+            bpy.ops.object.shade_smooth()
+    export_scene(path)
 
-export_cube(os.path.join(base, "tracks", "moon_loop_track.obj"), (6.0, 0.2, 6.0))
-export_cube(os.path.join(base, "tracks", "doge_city_track.obj"), (7.0, 0.2, 5.0))
-export_cube(os.path.join(base, "tracks", "shiba_temple_track.obj"), (5.5, 0.2, 7.0))
-export_cube(os.path.join(base, "tracks", "wow_valley_track.obj"), (8.0, 0.2, 4.5))
-export_cube(os.path.join(base, "tracks", "to_the_moon_track.obj"), (4.8, 0.2, 8.0))
-export_cube(os.path.join(base, "tracks", "shibaverse_track.obj"), (8.2, 0.2, 8.2))
-export_cube(os.path.join(base, "tracks", "boneyard_ring_track.obj"), (6.8, 0.2, 6.2))
-export_cube(os.path.join(base, "tracks", "wow_speedway_track.obj"), (9.0, 0.2, 5.0))
-export_cube(os.path.join(base, "fighters", "shiba_fighter.obj"), (0.5, 1.1, 0.4))
-export_cube(os.path.join(base, "fighters", "doge_knight_fighter.obj"), (0.6, 1.0, 0.45))
-export_cube(os.path.join(base, "fighters", "moon_monk_fighter.obj"), (0.45, 1.2, 0.4))
-export_cube(os.path.join(base, "fighters", "rocket_rider_fighter.obj"), (0.55, 1.05, 0.42))
-export_cube(os.path.join(base, "fighters", "pixel_shiba_fighter.obj"), (0.5, 1.0, 0.5))
-export_cube(os.path.join(base, "fighters", "dojo_guardian_fighter.obj"), (0.65, 1.15, 0.45))
+
+def make_track(path, scale=(6.0, 6.0), obstacles=12):
+    reset_scene()
+    bpy.ops.mesh.primitive_plane_add(size=2.0, location=(0, 0, 0))
+    track = bpy.context.active_object
+    track.scale = (scale[0], scale[1], 1.0)
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.subdivide(number_cuts=18)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    for v in track.data.vertices:
+        v.co.z += 0.12 * random.uniform(-1.0, 1.0)
+    for i in range(obstacles):
+        angle = (i / obstacles) * 6.28318
+        radius = min(scale) * 0.55
+        bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=0.28, location=(radius * math.cos(angle), radius * math.sin(angle), 0.35))
+    bpy.ops.object.shade_smooth()
+    export_scene(path)
+
+
+def make_fighter(path, height=1.9):
+    reset_scene()
+    bpy.ops.mesh.primitive_cylinder_add(vertices=24, radius=0.26, depth=height * 0.55, location=(0, 0, height * 0.52))
+    torso = bpy.context.active_object
+    bpy.ops.object.shade_smooth()
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=40, ring_count=20, radius=0.24, location=(0, 0, height * 0.95))
+    bpy.ops.object.shade_smooth()
+    for arm_x in (-0.33, 0.33):
+        bpy.ops.mesh.primitive_cylinder_add(vertices=16, radius=0.08, depth=height * 0.34, location=(arm_x, 0, height * 0.66))
+        arm = bpy.context.active_object
+        arm.rotation_euler[1] = 0.22 * (-1 if arm_x < 0 else 1)
+        bpy.ops.object.shade_smooth()
+    for leg_x in (-0.12, 0.12):
+        bpy.ops.mesh.primitive_cylinder_add(vertices=16, radius=0.09, depth=height * 0.42, location=(leg_x, 0, height * 0.24))
+        bpy.ops.object.shade_smooth()
+    export_scene(path)
+
+
+for i in range(1, 13):
+    make_kart(os.path.join(base, "karts", f"shiba_kart_{i:02d}.obj"))
+
+make_track(os.path.join(base, "tracks", "moon_loop_track.obj"), (6.0, 6.0), obstacles=12)
+make_track(os.path.join(base, "tracks", "doge_city_track.obj"), (7.0, 5.0), obstacles=14)
+make_track(os.path.join(base, "tracks", "shiba_temple_track.obj"), (5.5, 7.0), obstacles=10)
+make_track(os.path.join(base, "tracks", "wow_valley_track.obj"), (8.0, 4.5), obstacles=16)
+make_track(os.path.join(base, "tracks", "to_the_moon_track.obj"), (4.8, 8.0), obstacles=18)
+make_track(os.path.join(base, "tracks", "shibaverse_track.obj"), (8.2, 8.2), obstacles=20)
+make_track(os.path.join(base, "tracks", "boneyard_ring_track.obj"), (6.8, 6.2), obstacles=14)
+make_track(os.path.join(base, "tracks", "wow_speedway_track.obj"), (9.0, 5.0), obstacles=18)
+make_fighter(os.path.join(base, "fighters", "shiba_fighter.obj"), height=1.8)
+make_fighter(os.path.join(base, "fighters", "doge_knight_fighter.obj"), height=1.95)
+make_fighter(os.path.join(base, "fighters", "moon_monk_fighter.obj"), height=1.88)
+make_fighter(os.path.join(base, "fighters", "rocket_rider_fighter.obj"), height=1.92)
+make_fighter(os.path.join(base, "fighters", "pixel_shiba_fighter.obj"), height=1.75)
+make_fighter(os.path.join(base, "fighters", "dojo_guardian_fighter.obj"), height=2.0)
 EOF
 
 cat > "${ROOT_DIR}/scripts/generate_models.sh" <<'EOF'
@@ -204,7 +258,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "${ROOT_DIR}"
 blender --background --python "${ROOT_DIR}/scripts/generate_models_blender.py"
-echo "Blender-generated models exported to ${ROOT_DIR}/assets/models (OBJ + glTF)"
+echo "Blender-generated models exported to ${ROOT_DIR}/assets/models (OBJ + glTF + GLB)"
 EOF
 
 cat > "${ROOT_DIR}/scripts/build_executable.sh" <<'EOF'
@@ -567,20 +621,36 @@ write_model_obj() {
 	local output_path="$1"
 	cat > "${output_path}" <<'EOF'
 o model
-v -1.0 0.0 -1.0
-v 1.0 0.0 -1.0
-v 1.0 0.0 1.0
-v -1.0 0.0 1.0
-v -1.0 1.0 -1.0
-v 1.0 1.0 -1.0
-v 1.0 1.0 1.0
-v -1.0 1.0 1.0
+v -1.2 -0.7 0.0
+v 1.2 -0.7 0.0
+v 1.2 0.7 0.0
+v -1.2 0.7 0.0
+v -1.0 -0.55 0.55
+v 1.0 -0.55 0.55
+v 1.0 0.55 0.55
+v -1.0 0.55 0.55
+v -0.8 -0.45 1.0
+v 0.8 -0.45 1.0
+v 0.8 0.45 1.0
+v -0.8 0.45 1.0
+v -0.45 -0.35 1.35
+v 0.45 -0.35 1.35
+v 0.45 0.35 1.35
+v -0.45 0.35 1.35
 f 1 2 3 4
-f 5 6 7 8
-f 1 5 8 4
-f 2 6 7 3
 f 1 2 6 5
-f 4 3 7 8
+f 2 3 7 6
+f 3 4 8 7
+f 4 1 5 8
+f 5 6 10 9
+f 6 7 11 10
+f 7 8 12 11
+f 8 5 9 12
+f 9 10 14 13
+f 10 11 15 14
+f 11 12 16 15
+f 12 9 13 16
+f 13 14 15 16
 EOF
 }
 

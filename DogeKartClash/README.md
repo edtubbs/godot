@@ -52,6 +52,9 @@ Build web bundle (for GitHub Pages), with optional custom domain:
 DOGEKART_DOMAIN=play.dogekart.example ./DogeKartClash/scripts/build_web_bundle.sh
 ```
 
+To deploy in CI, enable Pages by setting repo variable `DOGEKART_ENABLE_PAGES=true`,
+or trigger workflow dispatch with `deploy_pages=true`.
+
 Serve web build from PUP payload locally (Dogebox-style static hosting):
 
 ```bash
@@ -124,5 +127,5 @@ It also generates:
 ## Mesh formats
 
 - Included starter assets are committed as `.obj`.
-- Blender generation exports `.blend` source files plus `.obj` and `.gltf` for each model.
-- Prefer `.gltf` for Godot/Web pipelines; keep `.obj` for DCC interoperability.
+- Blender generation exports `.blend` source files plus `.obj`, `.gltf`, and binary `.glb` for each model.
+- Prefer binary `.glb`/`.gltf` for Godot/Web pipelines; keep `.obj` for DCC interoperability.
