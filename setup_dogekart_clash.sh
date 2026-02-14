@@ -5,6 +5,7 @@ ROOT_DIR="${1:-DogeKartClash}"
 SKIP_CLONE="${SKIP_CLONE:-0}"
 
 mkdir -p "${ROOT_DIR}"/{godot,pup,docs,assets,scripts,third_party}
+mkdir -p "${ROOT_DIR}"/assets/models/{karts,tracks,fighters}
 
 clone_if_missing() {
 	local url="$1"
@@ -176,6 +177,37 @@ config_version=5
 config/name="DogeKartClash"
 run/main_scene=""
 EOF
+
+write_model_obj() {
+	local output_path="$1"
+	cat > "${output_path}" <<'EOF'
+o model
+v -1.0 0.0 -1.0
+v 1.0 0.0 -1.0
+v 1.0 0.0 1.0
+v -1.0 0.0 1.0
+v -1.0 1.0 -1.0
+v 1.0 1.0 -1.0
+v 1.0 1.0 1.0
+v -1.0 1.0 1.0
+f 1 2 3 4
+f 5 6 7 8
+f 1 5 8 4
+f 2 6 7 3
+f 1 2 6 5
+f 4 3 7 8
+EOF
+}
+
+write_model_obj "${ROOT_DIR}/assets/models/karts/shiba_kart_01.obj"
+write_model_obj "${ROOT_DIR}/assets/models/karts/shiba_kart_02.obj"
+write_model_obj "${ROOT_DIR}/assets/models/karts/shiba_kart_03.obj"
+write_model_obj "${ROOT_DIR}/assets/models/karts/shiba_kart_04.obj"
+write_model_obj "${ROOT_DIR}/assets/models/karts/shiba_kart_05.obj"
+write_model_obj "${ROOT_DIR}/assets/models/tracks/moon_loop_track.obj"
+write_model_obj "${ROOT_DIR}/assets/models/tracks/doge_city_track.obj"
+write_model_obj "${ROOT_DIR}/assets/models/tracks/shiba_temple_track.obj"
+write_model_obj "${ROOT_DIR}/assets/models/fighters/shiba_fighter.obj"
 
 chmod +x "${ROOT_DIR}/scripts/link_addons.sh" "${ROOT_DIR}/scripts/dev_up.sh"
 

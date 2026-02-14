@@ -65,3 +65,7 @@ It also generates:
 - `pup/manifest.json` and `pup/pup.nix`
 - `scripts/link_addons.sh` and `scripts/dev_up.sh`
 - `docs/dependencies.md`
+- `assets/models/` with included placeholder 3D models:
+  - 5 kart models (`shiba_kart_01..05.obj`)
+  - 3 track models (`moon_loop_track.obj`, `doge_city_track.obj`, `shiba_temple_track.obj`)
+  - 1 fighter model (`shiba_fighter.obj`)
