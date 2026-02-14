@@ -6,6 +6,7 @@ SKIP_CLONE="${SKIP_CLONE:-0}"
 
 mkdir -p "${ROOT_DIR}"/{godot,pup,docs,assets,scripts,third_party}
 mkdir -p "${ROOT_DIR}"/assets/models/{karts,tracks,fighters}
+mkdir -p "${ROOT_DIR}"/assets/blender/{karts,tracks,fighters}
 
 clone_if_missing() {
 	local url="$1"
@@ -149,9 +150,13 @@ import bpy
 import os
 
 base = os.environ.get("DOGEKART_MODEL_DIR", os.path.join(os.getcwd(), "assets", "models"))
+blend_base = os.environ.get("DOGEKART_BLEND_DIR", os.path.join(os.getcwd(), "assets", "blender"))
 os.makedirs(os.path.join(base, "karts"), exist_ok=True)
 os.makedirs(os.path.join(base, "tracks"), exist_ok=True)
 os.makedirs(os.path.join(base, "fighters"), exist_ok=True)
+os.makedirs(os.path.join(blend_base, "karts"), exist_ok=True)
+os.makedirs(os.path.join(blend_base, "tracks"), exist_ok=True)
+os.makedirs(os.path.join(blend_base, "fighters"), exist_ok=True)
 
 
 def reset_scene():
@@ -167,15 +172,29 @@ def export_cube(path, scale=(1.0, 1.0, 1.0)):
     bpy.ops.export_scene.obj(filepath=path, use_selection=False, axis_forward="-Z", axis_up="Y")
     gltf_path = path.rsplit(".", 1)[0] + ".gltf"
     bpy.ops.export_scene.gltf(filepath=gltf_path, export_format="GLTF_SEPARATE")
+    rel_path = os.path.relpath(path, base)
+    blend_path = os.path.join(blend_base, os.path.splitext(rel_path)[0] + ".blend")
+    os.makedirs(os.path.dirname(blend_path), exist_ok=True)
+    bpy.ops.wm.save_as_mainfile(filepath=blend_path, copy=True)
 
 
-for i in range(1, 6):
+for i in range(1, 13):
     export_cube(os.path.join(base, "karts", f"shiba_kart_0{i}.obj"), (1.3, 0.6, 0.8))
 
 export_cube(os.path.join(base, "tracks", "moon_loop_track.obj"), (6.0, 0.2, 6.0))
 export_cube(os.path.join(base, "tracks", "doge_city_track.obj"), (7.0, 0.2, 5.0))
 export_cube(os.path.join(base, "tracks", "shiba_temple_track.obj"), (5.5, 0.2, 7.0))
+export_cube(os.path.join(base, "tracks", "wow_valley_track.obj"), (8.0, 0.2, 4.5))
+export_cube(os.path.join(base, "tracks", "to_the_moon_track.obj"), (4.8, 0.2, 8.0))
+export_cube(os.path.join(base, "tracks", "shibaverse_track.obj"), (8.2, 0.2, 8.2))
+export_cube(os.path.join(base, "tracks", "boneyard_ring_track.obj"), (6.8, 0.2, 6.2))
+export_cube(os.path.join(base, "tracks", "wow_speedway_track.obj"), (9.0, 0.2, 5.0))
 export_cube(os.path.join(base, "fighters", "shiba_fighter.obj"), (0.5, 1.1, 0.4))
+export_cube(os.path.join(base, "fighters", "doge_knight_fighter.obj"), (0.6, 1.0, 0.45))
+export_cube(os.path.join(base, "fighters", "moon_monk_fighter.obj"), (0.45, 1.2, 0.4))
+export_cube(os.path.join(base, "fighters", "rocket_rider_fighter.obj"), (0.55, 1.05, 0.42))
+export_cube(os.path.join(base, "fighters", "pixel_shiba_fighter.obj"), (0.5, 1.0, 0.5))
+export_cube(os.path.join(base, "fighters", "dojo_guardian_fighter.obj"), (0.65, 1.15, 0.45))
 EOF
 
 cat > "${ROOT_DIR}/scripts/generate_models.sh" <<'EOF'
@@ -194,6 +213,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 GODOT_BIN="${GODOT_BIN:-}"
+GODOT_EXPORT_MODE="${GODOT_EXPORT_MODE:-release}"
 mkdir -p "${ROOT_DIR}/godot/build"
 
 if [ -z "${GODOT_BIN}" ]; then
@@ -205,10 +225,18 @@ if [ -z "${GODOT_BIN}" ]; then
 fi
 
 if [ -n "${GODOT_BIN}" ]; then
-	if "${GODOT_BIN}" --headless --path "${ROOT_DIR}/godot" --export-debug "Linux/X11" "${ROOT_DIR}/godot/build/DogeKartClash.x86_64"; then
-		chmod +x "${ROOT_DIR}/godot/build/DogeKartClash.x86_64"
+	if [ "${GODOT_EXPORT_MODE}" = "debug" ]; then
+		if "${GODOT_BIN}" --headless --path "${ROOT_DIR}/godot" --export-debug "Linux/X11" "${ROOT_DIR}/godot/build/DogeKartClash.x86_64"; then
+			chmod +x "${ROOT_DIR}/godot/build/DogeKartClash.x86_64"
+		else
+			GODOT_BIN=""
+		fi
 	else
-		GODOT_BIN=""
+		if "${GODOT_BIN}" --headless --path "${ROOT_DIR}/godot" --export-release "Linux/X11" "${ROOT_DIR}/godot/build/DogeKartClash.x86_64"; then
+			chmod +x "${ROOT_DIR}/godot/build/DogeKartClash.x86_64"
+		else
+			GODOT_BIN=""
+		fi
 	fi
 fi
 
@@ -242,6 +270,16 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 mkdir -p "${ROOT_DIR}/pup/build"
+mkdir -p "${ROOT_DIR}/pup/www"
+
+if [ -f "${ROOT_DIR}/godot/build/web/index.html" ]; then
+	cp -a "${ROOT_DIR}/godot/build/web/." "${ROOT_DIR}/pup/www/"
+elif [ ! -f "${ROOT_DIR}/pup/www/index.html" ]; then
+	cat > "${ROOT_DIR}/pup/www/index.html" <<'HTML'
+<!doctype html>
+<html><body><h1>DogeKart Clash PUP</h1><p>Build web bundle first to publish playable assets.</p></body></html>
+HTML
+fi
 
 if command -v nix >/dev/null 2>&1; then
 	(
@@ -249,7 +287,7 @@ if command -v nix >/dev/null 2>&1; then
 		nix build -f pup.nix
 	)
 else
-	tar -czf "${ROOT_DIR}/pup/build/dogekart-clash-pup.tar.gz" -C "${ROOT_DIR}/pup" manifest.json pup.nix
+	tar -czf "${ROOT_DIR}/pup/build/dogekart-clash-pup.tar.gz" -C "${ROOT_DIR}/pup" manifest.json pup.nix www
 fi
 
 if [ -d "${ROOT_DIR}/pup/result" ]; then
@@ -266,6 +304,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 GODOT_BIN="${GODOT_BIN:-}"
 DOGEKART_DOMAIN="${DOGEKART_DOMAIN:-dogekart-clash.example.com}"
+GODOT_EXPORT_MODE="${GODOT_EXPORT_MODE:-release}"
 mkdir -p "${ROOT_DIR}/godot/build/web"
 
 if [ -z "${GODOT_BIN}" ]; then
@@ -277,8 +316,14 @@ if [ -z "${GODOT_BIN}" ]; then
 fi
 
 if [ -n "${GODOT_BIN}" ]; then
-	if ! "${GODOT_BIN}" --headless --path "${ROOT_DIR}/godot" --export-debug "Web" "${ROOT_DIR}/godot/build/web/index.html"; then
-		GODOT_BIN=""
+	if [ "${GODOT_EXPORT_MODE}" = "debug" ]; then
+		if ! "${GODOT_BIN}" --headless --path "${ROOT_DIR}/godot" --export-debug "Web" "${ROOT_DIR}/godot/build/web/index.html"; then
+			GODOT_BIN=""
+		fi
+	else
+		if ! "${GODOT_BIN}" --headless --path "${ROOT_DIR}/godot" --export-release "Web" "${ROOT_DIR}/godot/build/web/index.html"; then
+			GODOT_BIN=""
+		fi
 	fi
 fi
 
@@ -305,6 +350,57 @@ echo "Web bundle ready: ${ROOT_DIR}/godot/build/web"
 echo "CNAME: ${DOGEKART_DOMAIN}"
 EOF
 
+cat > "${ROOT_DIR}/scripts/serve_web_from_pup.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PORT="${PORT:-8080}"
+cd "${ROOT_DIR}/pup/www"
+python3 -m http.server "${PORT}"
+EOF
+
+cat > "${ROOT_DIR}/scripts/dogecoin_cli_tools.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+LIBDOGE_DIR="${ROOT_DIR}/third_party/libdogecoin"
+SPVNODE_BIN="${SPVNODE_BIN:-spvnode}"
+SENDTX_BIN="${SENDTX_BIN:-sendtx}"
+
+usage() {
+	echo "Usage:"
+	echo "  $0 status"
+	echo "  $0 spvnode [extra args...]"
+	echo "  $0 sendtx <raw_tx_hex>"
+}
+
+case "${1:-}" in
+	status)
+		echo "libdogecoin source: ${LIBDOGE_DIR}"
+		command -v "${SPVNODE_BIN}" >/dev/null 2>&1 && echo "spvnode available: ${SPVNODE_BIN}" || echo "spvnode not found on PATH"
+		command -v "${SENDTX_BIN}" >/dev/null 2>&1 && echo "sendtx available: ${SENDTX_BIN}" || echo "sendtx not found on PATH"
+		;;
+	spvnode)
+		shift
+		exec "${SPVNODE_BIN}" "$@"
+		;;
+	sendtx)
+		shift
+		if [ $# -lt 1 ]; then
+			echo "sendtx requires raw transaction hex."
+			exit 1
+		fi
+		exec "${SENDTX_BIN}" "$1"
+		;;
+	*)
+		usage
+		exit 1
+		;;
+esac
+EOF
+
 cat > "${ROOT_DIR}/pup/manifest.json" <<'EOF'
 {
   "name": "dogekart-clash",
@@ -312,7 +408,8 @@ cat > "${ROOT_DIR}/pup/manifest.json" <<'EOF'
   "description": "DogeKart Clash backend package for Dogebox",
   "services": [
     { "name": "nakama", "port": 7350 },
-    { "name": "dogecoin-rpc", "port": 18443 }
+    { "name": "dogecoin-rpc", "port": 18443 },
+    { "name": "web", "port": 8080 }
   ]
 }
 EOF
@@ -325,6 +422,7 @@ pkgs.stdenv.mkDerivation {
   installPhase = ''
     mkdir -p $out/share/dogekart-clash
     cp manifest.json $out/share/dogekart-clash/manifest.json
+    cp -r www $out/share/dogekart-clash/www
   '';
 }
 EOF
@@ -432,11 +530,28 @@ write_model_obj "${ROOT_DIR}/assets/models/karts/shiba_kart_02.obj"
 write_model_obj "${ROOT_DIR}/assets/models/karts/shiba_kart_03.obj"
 write_model_obj "${ROOT_DIR}/assets/models/karts/shiba_kart_04.obj"
 write_model_obj "${ROOT_DIR}/assets/models/karts/shiba_kart_05.obj"
+write_model_obj "${ROOT_DIR}/assets/models/karts/shiba_kart_06.obj"
+write_model_obj "${ROOT_DIR}/assets/models/karts/shiba_kart_07.obj"
+write_model_obj "${ROOT_DIR}/assets/models/karts/shiba_kart_08.obj"
+write_model_obj "${ROOT_DIR}/assets/models/karts/shiba_kart_09.obj"
+write_model_obj "${ROOT_DIR}/assets/models/karts/shiba_kart_10.obj"
+write_model_obj "${ROOT_DIR}/assets/models/karts/shiba_kart_11.obj"
+write_model_obj "${ROOT_DIR}/assets/models/karts/shiba_kart_12.obj"
 write_model_obj "${ROOT_DIR}/assets/models/tracks/moon_loop_track.obj"
 write_model_obj "${ROOT_DIR}/assets/models/tracks/doge_city_track.obj"
 write_model_obj "${ROOT_DIR}/assets/models/tracks/shiba_temple_track.obj"
+write_model_obj "${ROOT_DIR}/assets/models/tracks/wow_valley_track.obj"
+write_model_obj "${ROOT_DIR}/assets/models/tracks/to_the_moon_track.obj"
+write_model_obj "${ROOT_DIR}/assets/models/tracks/shibaverse_track.obj"
+write_model_obj "${ROOT_DIR}/assets/models/tracks/boneyard_ring_track.obj"
+write_model_obj "${ROOT_DIR}/assets/models/tracks/wow_speedway_track.obj"
 write_model_obj "${ROOT_DIR}/assets/models/fighters/shiba_fighter.obj"
+write_model_obj "${ROOT_DIR}/assets/models/fighters/doge_knight_fighter.obj"
+write_model_obj "${ROOT_DIR}/assets/models/fighters/moon_monk_fighter.obj"
+write_model_obj "${ROOT_DIR}/assets/models/fighters/rocket_rider_fighter.obj"
+write_model_obj "${ROOT_DIR}/assets/models/fighters/pixel_shiba_fighter.obj"
+write_model_obj "${ROOT_DIR}/assets/models/fighters/dojo_guardian_fighter.obj"
 
-chmod +x "${ROOT_DIR}/scripts/link_addons.sh" "${ROOT_DIR}/scripts/dev_up.sh" "${ROOT_DIR}/scripts/generate_models.sh" "${ROOT_DIR}/scripts/build_executable.sh" "${ROOT_DIR}/scripts/build_pup.sh" "${ROOT_DIR}/scripts/build_web_bundle.sh"
+chmod +x "${ROOT_DIR}/scripts/link_addons.sh" "${ROOT_DIR}/scripts/dev_up.sh" "${ROOT_DIR}/scripts/generate_models.sh" "${ROOT_DIR}/scripts/build_executable.sh" "${ROOT_DIR}/scripts/build_pup.sh" "${ROOT_DIR}/scripts/build_web_bundle.sh" "${ROOT_DIR}/scripts/serve_web_from_pup.sh" "${ROOT_DIR}/scripts/dogecoin_cli_tools.sh"
 
 echo "DogeKart Clash scaffold created at: ${ROOT_DIR}"

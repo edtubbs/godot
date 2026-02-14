@@ -32,14 +32,15 @@ jobs:
 
       - name: Create DogeKart scaffold
         run: |
-          chmod +x /home/runner/work/godot/godot/setup_dogekart_clash.sh
-          SKIP_CLONE=1 /home/runner/work/godot/godot/setup_dogekart_clash.sh /tmp/DogeKartClash
+          chmod +x "${GITHUB_WORKSPACE}/setup_dogekart_clash.sh"
+          SKIP_CLONE=1 "${GITHUB_WORKSPACE}/setup_dogekart_clash.sh" /tmp/DogeKartClash
 
       - name: Build executable artifact
         run: |
+          /tmp/DogeKartClash/scripts/dogecoin_cli_tools.sh status
           /tmp/DogeKartClash/scripts/build_executable.sh
-          /tmp/DogeKartClash/scripts/build_pup.sh
           /tmp/DogeKartClash/scripts/build_web_bundle.sh
+          /tmp/DogeKartClash/scripts/build_pup.sh
           ls -lah /tmp/DogeKartClash/godot/build
           ls -lah /tmp/DogeKartClash/godot/build/web
           ls -lah /tmp/DogeKartClash/pup/build

@@ -46,6 +46,20 @@ Build web bundle (for GitHub Pages), with optional custom domain:
 DOGEKART_DOMAIN=play.dogekart.example ./DogeKartClash/scripts/build_web_bundle.sh
 ```
 
+Serve web build from PUP payload locally (Dogebox-style static hosting):
+
+```bash
+./DogeKartClash/scripts/serve_web_from_pup.sh
+```
+
+Use libdogecoin SPV/sendtx helper wrapper:
+
+```bash
+./DogeKartClash/scripts/dogecoin_cli_tools.sh status
+./DogeKartClash/scripts/dogecoin_cli_tools.sh spvnode --help
+./DogeKartClash/scripts/dogecoin_cli_tools.sh sendtx <raw_tx_hex>
+```
+
 ## Required upstream repositories
 
 The setup script clones the exact dependencies required by the prompt into `third_party/`:
@@ -92,14 +106,16 @@ It also generates:
 - `scripts/build_executable.sh` (builds `godot/build/DogeKartClash.x86_64` + tar.gz artifact)
 - `scripts/build_pup.sh` (builds `pup/build/dogekart-clash-pup.tar.gz`)
 - `scripts/build_web_bundle.sh` (builds `godot/build/web/` and writes `CNAME`)
+- `scripts/serve_web_from_pup.sh` (serves `pup/www` on port 8080 by default)
+- `scripts/dogecoin_cli_tools.sh` (wrapper for `spvnode`/`sendtx` CLI workflows)
 - `docs/dependencies.md`
 - `assets/models/` with included placeholder 3D models:
-  - 5 kart models (`shiba_kart_01..05.obj`)
-  - 3 track models (`moon_loop_track.obj`, `doge_city_track.obj`, `shiba_temple_track.obj`)
-  - 1 fighter model (`shiba_fighter.obj`)
+  - 12 kart models (`shiba_kart_01..12.obj`)
+  - 8 track/arena models (`moon_loop_track.obj`, `doge_city_track.obj`, `shiba_temple_track.obj`, `wow_valley_track.obj`, `to_the_moon_track.obj`, `shibaverse_track.obj`, `boneyard_ring_track.obj`, `wow_speedway_track.obj`)
+  - 6 fighter/character models (`shiba_fighter.obj`, `doge_knight_fighter.obj`, `moon_monk_fighter.obj`, `rocket_rider_fighter.obj`, `pixel_shiba_fighter.obj`, `dojo_guardian_fighter.obj`)
 
 ## Mesh formats
 
 - Included starter assets are committed as `.obj`.
-- Blender generation exports both `.obj` and `.gltf` for each model.
+- Blender generation exports `.blend` source files plus `.obj` and `.gltf` for each model.
 - Prefer `.gltf` for Godot/Web pipelines; keep `.obj` for DCC interoperability.
