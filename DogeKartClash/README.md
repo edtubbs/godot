@@ -40,6 +40,12 @@ Build the Dogebox PUP artifact:
 ./DogeKartClash/scripts/build_pup.sh
 ```
 
+Build Android APK artifact:
+
+```bash
+./DogeKartClash/scripts/build_android_apk.sh
+```
+
 Build web bundle (for GitHub Pages), with optional custom domain:
 
 ```bash
@@ -106,6 +112,7 @@ It also generates:
 - `scripts/build_executable.sh` (builds `godot/build/DogeKartClash.x86_64` + tar.gz artifact)
 - `scripts/build_pup.sh` (builds `pup/build/dogekart-clash-pup.tar.gz`)
 - `scripts/build_web_bundle.sh` (builds `godot/build/web/` and writes `CNAME`)
+- `scripts/build_android_apk.sh` (builds `godot/build/android/DogeKartClash.apk`)
 - `scripts/serve_web_from_pup.sh` (serves `pup/www` on port 8080 by default)
 - `scripts/dogecoin_cli_tools.sh` (wrapper for `spvnode`/`sendtx` CLI workflows)
 - `docs/dependencies.md`

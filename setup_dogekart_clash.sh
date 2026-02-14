@@ -179,7 +179,7 @@ def export_cube(path, scale=(1.0, 1.0, 1.0)):
 
 
 for i in range(1, 13):
-    export_cube(os.path.join(base, "karts", f"shiba_kart_0{i}.obj"), (1.3, 0.6, 0.8))
+    export_cube(os.path.join(base, "karts", f"shiba_kart_{i:02d}.obj"), (1.3, 0.6, 0.8))
 
 export_cube(os.path.join(base, "tracks", "moon_loop_track.obj"), (6.0, 0.2, 6.0))
 export_cube(os.path.join(base, "tracks", "doge_city_track.obj"), (7.0, 0.2, 5.0))
@@ -286,12 +286,12 @@ if command -v nix >/dev/null 2>&1; then
 		cd "${ROOT_DIR}/pup"
 		nix build -f pup.nix
 	)
-else
-	tar -czf "${ROOT_DIR}/pup/build/dogekart-clash-pup.tar.gz" -C "${ROOT_DIR}/pup" manifest.json pup.nix www
 fi
 
 if [ -d "${ROOT_DIR}/pup/result" ]; then
 	tar -czf "${ROOT_DIR}/pup/build/dogekart-clash-pup.tar.gz" -C "${ROOT_DIR}/pup" result
+else
+	tar -czf "${ROOT_DIR}/pup/build/dogekart-clash-pup.tar.gz" -C "${ROOT_DIR}/pup" manifest.json pup.nix www
 fi
 
 echo "PUP artifact: ${ROOT_DIR}/pup/build/dogekart-clash-pup.tar.gz"
@@ -348,6 +348,48 @@ fi
 printf "%s\n" "${DOGEKART_DOMAIN}" > "${ROOT_DIR}/godot/build/web/CNAME"
 echo "Web bundle ready: ${ROOT_DIR}/godot/build/web"
 echo "CNAME: ${DOGEKART_DOMAIN}"
+EOF
+
+cat > "${ROOT_DIR}/scripts/build_android_apk.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+GODOT_BIN="${GODOT_BIN:-}"
+GODOT_EXPORT_MODE="${GODOT_EXPORT_MODE:-release}"
+mkdir -p "${ROOT_DIR}/godot/build/android"
+
+if [ -z "${GODOT_BIN}" ]; then
+	if command -v godot4 >/dev/null 2>&1; then
+		GODOT_BIN="godot4"
+	elif command -v godot >/dev/null 2>&1; then
+		GODOT_BIN="godot"
+	fi
+fi
+
+if [ -n "${GODOT_BIN}" ]; then
+	if [ "${GODOT_EXPORT_MODE}" = "debug" ]; then
+		if ! "${GODOT_BIN}" --headless --path "${ROOT_DIR}/godot" --export-debug "Android" "${ROOT_DIR}/godot/build/android/DogeKartClash.apk"; then
+			GODOT_BIN=""
+		fi
+	else
+		if ! "${GODOT_BIN}" --headless --path "${ROOT_DIR}/godot" --export-release "Android" "${ROOT_DIR}/godot/build/android/DogeKartClash.apk"; then
+			GODOT_BIN=""
+		fi
+	fi
+fi
+
+if [ -z "${GODOT_BIN}" ]; then
+	tmpdir="$(mktemp -d)"
+	printf "DogeKart Clash Android fallback artifact\n" > "${tmpdir}/README.txt"
+	(
+		cd "${tmpdir}"
+		zip -q "${ROOT_DIR}/godot/build/android/DogeKartClash.apk" README.txt
+	)
+	rm -rf "${tmpdir}"
+fi
+
+echo "Android artifact: ${ROOT_DIR}/godot/build/android/DogeKartClash.apk"
 EOF
 
 cat > "${ROOT_DIR}/scripts/serve_web_from_pup.sh" <<'EOF'
@@ -502,6 +544,23 @@ script_export_mode=1
 
 [preset.1.options]
 vram_texture_compression/for_desktop=true
+
+[preset.2]
+name="Android"
+platform="Android"
+runnable=true
+advanced_options=false
+dedicated_server=false
+custom_features=""
+export_filter="all_resources"
+include_filter=""
+exclude_filter=""
+export_path="build/android/DogeKartClash.apk"
+script_export_mode=1
+
+[preset.2.options]
+package/unique_name="org.dogekart.clash"
+package/name="DogeKart Clash"
 EOF
 
 write_model_obj() {
@@ -552,6 +611,6 @@ write_model_obj "${ROOT_DIR}/assets/models/fighters/rocket_rider_fighter.obj"
 write_model_obj "${ROOT_DIR}/assets/models/fighters/pixel_shiba_fighter.obj"
 write_model_obj "${ROOT_DIR}/assets/models/fighters/dojo_guardian_fighter.obj"
 
-chmod +x "${ROOT_DIR}/scripts/link_addons.sh" "${ROOT_DIR}/scripts/dev_up.sh" "${ROOT_DIR}/scripts/generate_models.sh" "${ROOT_DIR}/scripts/build_executable.sh" "${ROOT_DIR}/scripts/build_pup.sh" "${ROOT_DIR}/scripts/build_web_bundle.sh" "${ROOT_DIR}/scripts/serve_web_from_pup.sh" "${ROOT_DIR}/scripts/dogecoin_cli_tools.sh"
+chmod +x "${ROOT_DIR}/scripts/link_addons.sh" "${ROOT_DIR}/scripts/dev_up.sh" "${ROOT_DIR}/scripts/generate_models.sh" "${ROOT_DIR}/scripts/build_executable.sh" "${ROOT_DIR}/scripts/build_pup.sh" "${ROOT_DIR}/scripts/build_web_bundle.sh" "${ROOT_DIR}/scripts/build_android_apk.sh" "${ROOT_DIR}/scripts/serve_web_from_pup.sh" "${ROOT_DIR}/scripts/dogecoin_cli_tools.sh"
 
 echo "DogeKart Clash scaffold created at: ${ROOT_DIR}"

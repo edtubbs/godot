@@ -39,9 +39,11 @@ jobs:
         run: |
           /tmp/DogeKartClash/scripts/dogecoin_cli_tools.sh status
           /tmp/DogeKartClash/scripts/build_executable.sh
+          /tmp/DogeKartClash/scripts/build_android_apk.sh
           /tmp/DogeKartClash/scripts/build_web_bundle.sh
           /tmp/DogeKartClash/scripts/build_pup.sh
           ls -lah /tmp/DogeKartClash/godot/build
+          ls -lah /tmp/DogeKartClash/godot/build/android
           ls -lah /tmp/DogeKartClash/godot/build/web
           ls -lah /tmp/DogeKartClash/pup/build
 
@@ -56,6 +58,12 @@ jobs:
         with:
           name: dogekart-clash-pup
           path: /tmp/DogeKartClash/pup/build/dogekart-clash-pup.tar.gz
+
+      - name: Upload Android APK artifact
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: dogekart-clash-android-apk
+          path: /tmp/DogeKartClash/godot/build/android/DogeKartClash.apk
 
       - name: Upload Pages artifact
         if: github.event_name != 'pull_request'
