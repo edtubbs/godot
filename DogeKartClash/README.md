@@ -28,6 +28,12 @@ Regenerate all included models with Blender:
 ./DogeKartClash/scripts/generate_models.sh
 ```
 
+Build the executable game artifact:
+
+```bash
+./DogeKartClash/scripts/build_executable.sh
+```
+
 ## Required upstream repositories
 
 The setup script clones the exact dependencies required by the prompt into `third_party/`:
@@ -71,6 +77,7 @@ It also generates:
 - `pup/manifest.json` and `pup/pup.nix`
 - `scripts/link_addons.sh` and `scripts/dev_up.sh`
 - `scripts/generate_models.sh` + `scripts/generate_models_blender.py` (Blender model generation)
+- `scripts/build_executable.sh` (builds `godot/build/DogeKartClash.x86_64` + tar.gz artifact)
 - `docs/dependencies.md`
 - `assets/models/` with included placeholder 3D models:
   - 5 kart models (`shiba_kart_01..05.obj`)

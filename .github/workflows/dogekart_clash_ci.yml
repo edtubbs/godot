@@ -1,0 +1,32 @@
+name: 🐕 DogeKart Clash CI
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "setup_dogekart_clash.sh"
+      - "DogeKartClash/**"
+      - ".github/workflows/dogekart_clash_ci.yml"
+
+jobs:
+  scaffold-and-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Create DogeKart scaffold
+        run: |
+          chmod +x /home/runner/work/godot/godot/setup_dogekart_clash.sh
+          SKIP_CLONE=1 /home/runner/work/godot/godot/setup_dogekart_clash.sh /tmp/DogeKartClash
+
+      - name: Build executable artifact
+        run: |
+          /tmp/DogeKartClash/scripts/build_executable.sh
+          ls -lah /tmp/DogeKartClash/godot/build
+
+      - name: Upload executable artifact
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: dogekart-clash-linux
+          path: /tmp/DogeKartClash/godot/build/DogeKartClash-linux.tar.gz

@@ -188,6 +188,54 @@ blender --background --python "${ROOT_DIR}/scripts/generate_models_blender.py"
 echo "Blender-generated models exported to ${ROOT_DIR}/assets/models (OBJ + glTF)"
 EOF
 
+cat > "${ROOT_DIR}/scripts/build_executable.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+GODOT_BIN="${GODOT_BIN:-}"
+mkdir -p "${ROOT_DIR}/godot/build"
+
+if [ -z "${GODOT_BIN}" ]; then
+	if command -v godot4 >/dev/null 2>&1; then
+		GODOT_BIN="godot4"
+	elif command -v godot >/dev/null 2>&1; then
+		GODOT_BIN="godot"
+	fi
+fi
+
+if [ -n "${GODOT_BIN}" ]; then
+	if "${GODOT_BIN}" --headless --path "${ROOT_DIR}/godot" --export-debug "Linux/X11" "${ROOT_DIR}/godot/build/DogeKartClash.x86_64"; then
+		chmod +x "${ROOT_DIR}/godot/build/DogeKartClash.x86_64"
+	else
+		GODOT_BIN=""
+	fi
+fi
+
+if [ -z "${GODOT_BIN}" ]; then
+	cat > "${ROOT_DIR}/godot/build/DogeKartClash.x86_64" <<'LAUNCHER'
+#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+if command -v godot4 >/dev/null 2>&1; then
+	exec godot4 --path "${PROJECT_DIR}"
+elif command -v godot >/dev/null 2>&1; then
+	exec godot --path "${PROJECT_DIR}"
+else
+	echo "Godot runtime not found. Install Godot 4 and run again."
+	exit 1
+fi
+LAUNCHER
+	chmod +x "${ROOT_DIR}/godot/build/DogeKartClash.x86_64"
+fi
+
+tar -czf "${ROOT_DIR}/godot/build/DogeKartClash-linux.tar.gz" -C "${ROOT_DIR}/godot/build" DogeKartClash.x86_64
+echo "Build complete: ${ROOT_DIR}/godot/build/DogeKartClash.x86_64"
+echo "Artifact: ${ROOT_DIR}/godot/build/DogeKartClash-linux.tar.gz"
+EOF
+
 cat > "${ROOT_DIR}/pup/manifest.json" <<'EOF'
 {
   "name": "dogekart-clash",
@@ -220,7 +268,57 @@ config_version=5
 
 [application]
 config/name="DogeKartClash"
-run/main_scene=""
+run/main_scene="res://scenes/Main.tscn"
+EOF
+
+mkdir -p "${ROOT_DIR}/godot"/{scenes,scripts}
+
+cat > "${ROOT_DIR}/godot/scripts/main.gd" <<'EOF'
+extends Node3D
+
+@onready var kart: MeshInstance3D = $KartMesh
+
+func _process(delta: float) -> void:
+	kart.rotate_y(delta * 0.6)
+EOF
+
+cat > "${ROOT_DIR}/godot/scenes/Main.tscn" <<'EOF'
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_1"]
+size = Vector3(2, 0.8, 3)
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_main")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6, 8)
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.5, 0, 0.12941, 0.224144, -0.965926, 0.482963, 0.836516, 0.258819, 0, 4, 0)
+
+[node name="KartMesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_1")
+EOF
+
+cat > "${ROOT_DIR}/godot/export_presets.cfg" <<'EOF'
+[preset.0]
+name="Linux/X11"
+platform="Linux/X11"
+runnable=true
+advanced_options=false
+dedicated_server=false
+custom_features=""
+export_filter="all_resources"
+include_filter=""
+exclude_filter=""
+export_path="build/DogeKartClash.x86_64"
+script_export_mode=1
+
+[preset.0.options]
+binary_format/embed_pck=true
 EOF
 
 write_model_obj() {
@@ -254,6 +352,6 @@ write_model_obj "${ROOT_DIR}/assets/models/tracks/doge_city_track.obj"
 write_model_obj "${ROOT_DIR}/assets/models/tracks/shiba_temple_track.obj"
 write_model_obj "${ROOT_DIR}/assets/models/fighters/shiba_fighter.obj"
 
-chmod +x "${ROOT_DIR}/scripts/link_addons.sh" "${ROOT_DIR}/scripts/dev_up.sh" "${ROOT_DIR}/scripts/generate_models.sh"
+chmod +x "${ROOT_DIR}/scripts/link_addons.sh" "${ROOT_DIR}/scripts/dev_up.sh" "${ROOT_DIR}/scripts/generate_models.sh" "${ROOT_DIR}/scripts/build_executable.sh"
 
 echo "DogeKart Clash scaffold created at: ${ROOT_DIR}"
