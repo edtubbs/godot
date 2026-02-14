@@ -100,6 +100,7 @@ services:
       - "7351:7351"
 
   dogecoin:
+    # NOTE: Replace with a Dogecoin Core container in production; this local RPC stub is for scaffold bootstrapping only.
     image: ruimarinho/bitcoin-core:24
     command:
       - "-regtest=1"
