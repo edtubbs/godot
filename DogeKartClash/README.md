@@ -40,6 +40,12 @@ Build the Dogebox PUP artifact:
 ./DogeKartClash/scripts/build_pup.sh
 ```
 
+Build web bundle (for GitHub Pages), with optional custom domain:
+
+```bash
+DOGEKART_DOMAIN=play.dogekart.example ./DogeKartClash/scripts/build_web_bundle.sh
+```
+
 ## Required upstream repositories
 
 The setup script clones the exact dependencies required by the prompt into `third_party/`:
@@ -85,6 +91,7 @@ It also generates:
 - `scripts/generate_models.sh` + `scripts/generate_models_blender.py` (Blender model generation)
 - `scripts/build_executable.sh` (builds `godot/build/DogeKartClash.x86_64` + tar.gz artifact)
 - `scripts/build_pup.sh` (builds `pup/build/dogekart-clash-pup.tar.gz`)
+- `scripts/build_web_bundle.sh` (builds `godot/build/web/` and writes `CNAME`)
 - `docs/dependencies.md`
 - `assets/models/` with included placeholder 3D models:
   - 5 kart models (`shiba_kart_01..05.obj`)

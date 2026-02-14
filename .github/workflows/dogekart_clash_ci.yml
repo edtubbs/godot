@@ -1,6 +1,15 @@
 name: 🐕 DogeKart Clash CI
 on:
   workflow_dispatch:
+    inputs:
+      domain:
+        description: "Custom domain for GitHub Pages CNAME"
+        required: false
+        default: "dogekart-clash.example.com"
+  push:
+    branches:
+      - "copilot/build-dogekart-clash-repo"
+      - "main"
   pull_request:
     paths:
       - "setup_dogekart_clash.sh"
@@ -11,6 +20,12 @@ jobs:
   scaffold-and-build:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    env:
+      DOGEKART_DOMAIN: ${{ github.event.inputs.domain || vars.DOGEKART_DOMAIN || 'dogekart-clash.example.com' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -24,7 +39,9 @@ jobs:
         run: |
           /tmp/DogeKartClash/scripts/build_executable.sh
           /tmp/DogeKartClash/scripts/build_pup.sh
+          /tmp/DogeKartClash/scripts/build_web_bundle.sh
           ls -lah /tmp/DogeKartClash/godot/build
+          ls -lah /tmp/DogeKartClash/godot/build/web
           ls -lah /tmp/DogeKartClash/pup/build
 
       - name: Upload executable artifact
@@ -38,3 +55,24 @@ jobs:
         with:
           name: dogekart-clash-pup
           path: /tmp/DogeKartClash/pup/build/dogekart-clash-pup.tar.gz
+
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: /tmp/DogeKartClash/godot/build/web
+
+  deploy-pages:
+    if: github.event_name != 'pull_request'
+    needs: scaffold-and-build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
