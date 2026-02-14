@@ -1,6 +1,6 @@
 # DogeKart Clash (Bootstrap)
 
-This repository now includes a minimal bootstrap path for the DogeKart Clash build prompt.
+This repository now includes a bootstrap path that wires required upstream projects into a runnable integration workspace.
 
 ## One-click setup
 
@@ -14,6 +14,12 @@ To choose a custom output directory:
 
 ```bash
 ./setup_dogekart_clash.sh /absolute/path/to/DogeKartClash
+```
+
+Bring up local backend services and link addons:
+
+```bash
+./DogeKartClash/scripts/dev_up.sh
 ```
 
 ## Required upstream repositories
@@ -49,5 +55,13 @@ DogeKartClash/
 ├── docs/
 ├── assets/
 ├── scripts/
-└── third_party/
+├── third_party/
+└── docker-compose.yml
 ```
+
+It also generates:
+
+- `godot/project.godot` bootstrap project file
+- `pup/manifest.json` and `pup/pup.nix`
+- `scripts/link_addons.sh` and `scripts/dev_up.sh`
+- `docs/dependencies.md`

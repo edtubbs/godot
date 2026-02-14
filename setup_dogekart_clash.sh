@@ -36,7 +36,7 @@ clone_if_missing "https://github.com/Saitodepaula/Godot-6DOF-Vehicle-Demo" "${RO
 clone_if_missing "https://github.com/DAShoe1/Godot-Easy-Vehicle-Physics" "${ROOT_DIR}/third_party/Godot-Easy-Vehicle-Physics"
 
 cat > "${ROOT_DIR}/docs/README.md" <<'EOF'
-# DogeKart Clash bootstrap
+# DogeKart Clash integration scaffold
 
 This scaffold is generated from the root `setup_dogekart_clash.sh` script and provides:
 
@@ -48,5 +48,135 @@ This scaffold is generated from the root `setup_dogekart_clash.sh` script and pr
 
 The script clones all required upstream repositories listed in the issue prompt so integration can proceed in the required order.
 EOF
+
+cat > "${ROOT_DIR}/docs/dependencies.md" <<'EOF'
+# Required upstream dependencies
+
+| Category | Project | URL |
+|----------|---------|-----|
+| Engine | Godot 4.3+ | https://github.com/godotengine/godot |
+| Racing Base | vehicle_sample | https://github.com/32kda/vehicle_sample |
+| Arcade Karts | godot_vehicle_arcade | https://github.com/kirca/godot_vehicle_arcade |
+| Fighting | Sakuga Engine | https://github.com/NoisyChain/Sakuga-Engine |
+| Multiplayer | Nakama | https://github.com/heroiclabs/nakama |
+| Multiplayer | nakama-godot | https://github.com/heroiclabs/nakama-godot |
+| Netcode | godot-rollback-netcode | https://github.com/maximkulkin/godot-rollback-netcode |
+| Crypto Core | libdogecoin | https://github.com/dogecoinfoundation/libdogecoin |
+| Crypto API | GigaWallet | https://github.com/dogecoinfoundation/gigawallet |
+| Dogecoin Node | Dogecoin Core | https://github.com/dogecoin/dogecoin |
+| Web Crypto | doge-sdk | https://github.com/PsyProtocol/doge-sdk |
+| Dogebox Platform | Dogebox OS | https://github.com/Dogebox-WG/os |
+| Dogebox Platform | dogeboxd | https://github.com/dogeorg/dogeboxd |
+| Dogebox Platform | dogenet | https://github.com/Dogebox-WG/dogenet |
+| Dogebox Platform | dpanel | https://github.com/dogeorg/dpanel |
+| Extras | Godot-6DOF-Vehicle-Demo | https://github.com/Saitodepaula/Godot-6DOF-Vehicle-Demo |
+| Extras | Godot-Easy-Vehicle-Physics | https://github.com/DAShoe1/Godot-Easy-Vehicle-Physics |
+EOF
+
+cat > "${ROOT_DIR}/docker-compose.yml" <<'EOF'
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: nakama
+      POSTGRES_PASSWORD: localdb
+    ports:
+      - "5432:5432"
+
+  nakama:
+    image: heroiclabs/nakama:3.20.0
+    depends_on:
+      - postgres
+    command:
+      - "/nakama/nakama"
+      - "migrate"
+      - "up"
+      - "--database.address"
+      - "postgres:localdb@postgres:5432/nakama"
+    ports:
+      - "7349:7349"
+      - "7350:7350"
+      - "7351:7351"
+
+  dogecoin:
+    image: ruimarinho/bitcoin-core:24
+    command:
+      - "-regtest=1"
+      - "-server=1"
+      - "-rpcbind=0.0.0.0"
+      - "-rpcallowip=0.0.0.0/0"
+      - "-rpcuser=doge"
+      - "-rpcpassword=doge"
+    ports:
+      - "18443:18443"
+EOF
+
+cat > "${ROOT_DIR}/scripts/link_addons.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+mkdir -p "${ROOT_DIR}/godot/addons"
+
+link_repo() {
+	local source_dir="$1"
+	local target_name="$2"
+	if [ -d "${source_dir}" ]; then
+		ln -sfn "${source_dir}" "${ROOT_DIR}/godot/addons/${target_name}"
+	fi
+}
+
+link_repo "${ROOT_DIR}/third_party/nakama-godot/addons/com.heroiclabs.nakama" "com.heroiclabs.nakama"
+link_repo "${ROOT_DIR}/third_party/godot-rollback-netcode/addons/rollback" "rollback"
+link_repo "${ROOT_DIR}/third_party/godot_vehicle_arcade" "godot_vehicle_arcade"
+link_repo "${ROOT_DIR}/third_party/Godot-Easy-Vehicle-Physics" "Godot-Easy-Vehicle-Physics"
+EOF
+
+cat > "${ROOT_DIR}/scripts/dev_up.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+docker compose -f "${ROOT_DIR}/docker-compose.yml" up -d
+"${ROOT_DIR}/scripts/link_addons.sh"
+echo "Backend services started and Godot addons linked."
+EOF
+
+cat > "${ROOT_DIR}/pup/manifest.json" <<'EOF'
+{
+  "name": "dogekart-clash",
+  "version": "0.1.0",
+  "description": "DogeKart Clash backend package for Dogebox",
+  "services": [
+    { "name": "nakama", "port": 7350 },
+    { "name": "dogecoin-rpc", "port": 18443 }
+  ]
+}
+EOF
+
+cat > "${ROOT_DIR}/pup/pup.nix" <<'EOF'
+{ pkgs ? import <nixpkgs> {} }:
+pkgs.stdenv.mkDerivation {
+  name = "dogekart-clash-pup";
+  src = ./.;
+  installPhase = ''
+    mkdir -p $out/share/dogekart-clash
+    cp manifest.json $out/share/dogekart-clash/manifest.json
+  '';
+}
+EOF
+
+cat > "${ROOT_DIR}/godot/project.godot" <<'EOF'
+; Engine configuration file.
+; Minimal bootstrap project used for dependency integration.
+
+config_version=5
+
+[application]
+config/name="DogeKartClash"
+run/main_scene=""
+EOF
+
+chmod +x "${ROOT_DIR}/scripts/link_addons.sh" "${ROOT_DIR}/scripts/dev_up.sh"
 
 echo "DogeKart Clash scaffold created at: ${ROOT_DIR}"
