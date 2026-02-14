@@ -23,10 +23,18 @@ jobs:
       - name: Build executable artifact
         run: |
           /tmp/DogeKartClash/scripts/build_executable.sh
+          /tmp/DogeKartClash/scripts/build_pup.sh
           ls -lah /tmp/DogeKartClash/godot/build
+          ls -lah /tmp/DogeKartClash/pup/build
 
       - name: Upload executable artifact
         uses: ./.github/actions/upload-artifact
         with:
           name: dogekart-clash-linux
           path: /tmp/DogeKartClash/godot/build/DogeKartClash-linux.tar.gz
+
+      - name: Upload PUP artifact
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: dogekart-clash-pup
+          path: /tmp/DogeKartClash/pup/build/dogekart-clash-pup.tar.gz

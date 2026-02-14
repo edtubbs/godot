@@ -34,6 +34,12 @@ Build the executable game artifact:
 ./DogeKartClash/scripts/build_executable.sh
 ```
 
+Build the Dogebox PUP artifact:
+
+```bash
+./DogeKartClash/scripts/build_pup.sh
+```
+
 ## Required upstream repositories
 
 The setup script clones the exact dependencies required by the prompt into `third_party/`:
@@ -78,6 +84,7 @@ It also generates:
 - `scripts/link_addons.sh` and `scripts/dev_up.sh`
 - `scripts/generate_models.sh` + `scripts/generate_models_blender.py` (Blender model generation)
 - `scripts/build_executable.sh` (builds `godot/build/DogeKartClash.x86_64` + tar.gz artifact)
+- `scripts/build_pup.sh` (builds `pup/build/dogekart-clash-pup.tar.gz`)
 - `docs/dependencies.md`
 - `assets/models/` with included placeholder 3D models:
   - 5 kart models (`shiba_kart_01..05.obj`)

@@ -236,6 +236,29 @@ echo "Build complete: ${ROOT_DIR}/godot/build/DogeKartClash.x86_64"
 echo "Artifact: ${ROOT_DIR}/godot/build/DogeKartClash-linux.tar.gz"
 EOF
 
+cat > "${ROOT_DIR}/scripts/build_pup.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+mkdir -p "${ROOT_DIR}/pup/build"
+
+if command -v nix >/dev/null 2>&1; then
+	(
+		cd "${ROOT_DIR}/pup"
+		nix build -f pup.nix
+	)
+else
+	tar -czf "${ROOT_DIR}/pup/build/dogekart-clash-pup.tar.gz" -C "${ROOT_DIR}/pup" manifest.json pup.nix
+fi
+
+if [ -d "${ROOT_DIR}/pup/result" ]; then
+	tar -czf "${ROOT_DIR}/pup/build/dogekart-clash-pup.tar.gz" -C "${ROOT_DIR}/pup" result
+fi
+
+echo "PUP artifact: ${ROOT_DIR}/pup/build/dogekart-clash-pup.tar.gz"
+EOF
+
 cat > "${ROOT_DIR}/pup/manifest.json" <<'EOF'
 {
   "name": "dogekart-clash",
@@ -352,6 +375,6 @@ write_model_obj "${ROOT_DIR}/assets/models/tracks/doge_city_track.obj"
 write_model_obj "${ROOT_DIR}/assets/models/tracks/shiba_temple_track.obj"
 write_model_obj "${ROOT_DIR}/assets/models/fighters/shiba_fighter.obj"
 
-chmod +x "${ROOT_DIR}/scripts/link_addons.sh" "${ROOT_DIR}/scripts/dev_up.sh" "${ROOT_DIR}/scripts/generate_models.sh" "${ROOT_DIR}/scripts/build_executable.sh"
+chmod +x "${ROOT_DIR}/scripts/link_addons.sh" "${ROOT_DIR}/scripts/dev_up.sh" "${ROOT_DIR}/scripts/generate_models.sh" "${ROOT_DIR}/scripts/build_executable.sh" "${ROOT_DIR}/scripts/build_pup.sh"
 
 echo "DogeKart Clash scaffold created at: ${ROOT_DIR}"
