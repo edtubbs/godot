@@ -359,6 +359,7 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 GODOT_BIN="${GODOT_BIN:-}"
 DOGEKART_DOMAIN="${DOGEKART_DOMAIN:-dogekart-clash.example.com}"
 GODOT_EXPORT_MODE="${GODOT_EXPORT_MODE:-release}"
+REQUIRE_REAL_WEB_EXPORT="${REQUIRE_REAL_WEB_EXPORT:-0}"
 mkdir -p "${ROOT_DIR}/godot/build/web"
 
 if [ -z "${GODOT_BIN}" ]; then
@@ -382,6 +383,10 @@ if [ -n "${GODOT_BIN}" ]; then
 fi
 
 if [ -z "${GODOT_BIN}" ]; then
+	if [ "${REQUIRE_REAL_WEB_EXPORT}" = "1" ]; then
+		echo "Real Godot Web export required, but no working Godot exporter was found." >&2
+		exit 1
+	fi
 	cat > "${ROOT_DIR}/godot/build/web/index.html" <<'HTML'
 <!doctype html>
 <html lang="en">

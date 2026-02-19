@@ -30,9 +30,23 @@ jobs:
       id-token: write
     env:
       DOGEKART_DOMAIN: ${{ github.event.inputs.domain || vars.DOGEKART_DOMAIN || 'dogekart-clash.example.com' }}
+      REQUIRE_REAL_WEB_EXPORT: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Setup Godot 4.3 editor and web templates
+        run: |
+          GODOT_TAG="4.3-stable"
+          curl -sSL -o /tmp/godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_TAG}/Godot_v${GODOT_TAG}_linux.x86_64.zip"
+          unzip -q /tmp/godot.zip -d /tmp
+          install -m 0755 /tmp/Godot_v${GODOT_TAG}_linux.x86_64 /usr/local/bin/godot4
+
+          curl -sSL -o /tmp/godot_templates.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_TAG}/Godot_v${GODOT_TAG}_export_templates.tpz"
+          mkdir -p /tmp/godot_templates
+          unzip -q /tmp/godot_templates.tpz -d /tmp/godot_templates
+          mkdir -p "${HOME}/.local/share/godot/export_templates/4.3.stable"
+          cp /tmp/godot_templates/templates/* "${HOME}/.local/share/godot/export_templates/4.3.stable/"
 
       - name: Create DogeKart scaffold
         run: |
